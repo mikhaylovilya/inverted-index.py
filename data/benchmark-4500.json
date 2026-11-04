@@ -1,0 +1,75 @@
+{
+  "source": "data/data-4500/pages-4500.jsonl",
+  "source_documents": 4548,
+  "indexed_documents": 4548,
+  "synthetic_documents": 0,
+  "query": "Ректор СПбГУ/МГУ",
+  "query_terms": [
+    "ректор",
+    "спбгу",
+    "мгу"
+  ],
+  "result_documents": 4548,
+  "results_match_classic": true,
+  "top_results": [
+    {
+      "document_id": 43,
+      "score": 3
+    },
+    {
+      "document_id": 70,
+      "score": 3
+    },
+    {
+      "document_id": 93,
+      "score": 3
+    },
+    {
+      "document_id": 103,
+      "score": 3
+    },
+    {
+      "document_id": 105,
+      "score": 3
+    },
+    {
+      "document_id": 321,
+      "score": 3
+    },
+    {
+      "document_id": 353,
+      "score": 3
+    },
+    {
+      "document_id": 354,
+      "score": 3
+    },
+    {
+      "document_id": 363,
+      "score": 3
+    },
+    {
+      "document_id": 513,
+      "score": 3
+    }
+  ],
+  "timings": {
+    "collect_postings_seconds": 4.444668291005655,
+    "compression_seconds": 0.5810439999986556,
+    "total_index_seconds": 5.025712291004311,
+    "documents_per_second": 904.9463512148549,
+    "classic_documents_per_second": 1023.2484636037856,
+    "compressed_search_seconds": 0.002100687997881323,
+    "classic_search_seconds": 0.0005946879973635077,
+    "search_repeats": 10
+  },
+  "index": {
+    "documents": 4548,
+    "terms": 100717,
+    "postings": 3464866,
+    "compressed_bytes": 1659967,
+    "classic_bytes": 13859464,
+    "compression_ratio": 0.11977137066772568,
+    "saved_percent": 88.02286293322743
+  }
+}
