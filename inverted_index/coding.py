@@ -1,3 +1,6 @@
+SUPPORTED_CODINGS = ("gamma", "delta")
+
+
 class BitReader:
     __slots__ = ("data", "position", "limit")
 
@@ -25,6 +28,15 @@ class BitReader:
             value = (value << 1) | self.read_bit()
         return value
 
+    def read_delta(self):
+        length = self.read_gamma()
+        if length > 63:
+            raise ValueError("Invalid Elias delta code")
+        value = 1
+        for _ in range(length - 1):
+            value = (value << 1) | self.read_bit()
+        return value
+
 
 def encode_gamma(value):
     if value < 1:
@@ -33,7 +45,23 @@ def encode_gamma(value):
     return "0" * (len(bits) - 1) + bits
 
 
-def encode_postings(doc_ids):
+def encode_delta(value):
+    if value < 1:
+        raise ValueError("Elias delta encoding requires positive integers")
+    bits = bin(value)[2:]
+    return encode_gamma(len(bits)) + bits[1:]
+
+
+def _gap_encoder(coding):
+    if coding == "gamma":
+        return encode_gamma
+    if coding == "delta":
+        return encode_delta
+    raise ValueError(f"Unsupported coding: {coding}")
+
+
+def encode_postings(doc_ids, coding="gamma"):
+    encode_gap = _gap_encoder(coding)
     parts = []
     previous = 0
     count = 0
@@ -41,7 +69,7 @@ def encode_postings(doc_ids):
         gap = doc_id - previous
         if gap < 1:
             raise ValueError("Document ids must be positive, sorted and unique")
-        parts.append(encode_gamma(gap))
+        parts.append(encode_gap(gap))
         previous = doc_id
         count += 1
     bits = "".join(parts)
@@ -51,13 +79,19 @@ def encode_postings(doc_ids):
     return data, count
 
 
-def decode_postings(data, count):
+def decode_postings(data, count, coding="gamma"):
     if count < 0:
         raise ValueError("Posting count must be non-negative")
     reader = BitReader(data)
+    if coding == "gamma":
+        read_gap = reader.read_gamma
+    elif coding == "delta":
+        read_gap = reader.read_delta
+    else:
+        raise ValueError(f"Unsupported coding: {coding}")
     doc_ids = []
     previous = 0
     for _ in range(count):
-        previous += reader.read_gamma()
+        previous += read_gap()
         doc_ids.append(previous)
     return doc_ids

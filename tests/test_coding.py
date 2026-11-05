@@ -1,6 +1,11 @@
 import pytest
 
-from inverted_index.coding import decode_postings, encode_gamma, encode_postings
+from inverted_index.coding import (
+    decode_postings,
+    encode_delta,
+    encode_gamma,
+    encode_postings,
+)
 
 
 def test_elias_gamma_code_examples():
@@ -10,6 +15,36 @@ def test_elias_gamma_code_examples():
     assert encode_gamma(4) == "00100"
     assert encode_gamma(7) == "00111"
     assert encode_gamma(8) == "0001000"
+
+
+def test_elias_delta_code_examples():
+    assert encode_delta(1) == "1"
+    assert encode_delta(2) == "0100"
+    assert encode_delta(3) == "0101"
+    assert encode_delta(4) == "01100"
+    assert encode_delta(5) == "01101"
+    assert encode_delta(8) == "00100000"
+    assert encode_delta(16) == "001010000"
+    assert encode_delta(17) == "001010001"
+
+
+def test_encode_postings_elias_delta_bit_layout():
+    data, count = encode_postings([1, 3, 6], coding="delta")
+    assert data == b"\xa2\x80"
+    assert count == 3
+    assert encode_postings([3, 5], coding="delta")[0] == b"\x54"
+
+
+def test_elias_delta_postings_roundtrip():
+    doc_ids = [1, 3, 6, 7, 20, 21, 1000, 4548]
+    data, count = encode_postings(doc_ids, coding="delta")
+    assert decode_postings(data, count, coding="delta") == doc_ids
+
+
+def test_elias_delta_roundtrip_many_values():
+    values = list(range(1, 200)) + [255, 256, 1000, 4096, 4548, 1 << 20]
+    data, count = encode_postings(values, coding="delta")
+    assert decode_postings(data, count, coding="delta") == values
 
 
 def test_encode_postings_delta_and_gamma_bit_layout():
@@ -57,6 +92,12 @@ def test_encode_rejects_invalid_ids():
         encode_postings([1, 1])
     with pytest.raises(ValueError):
         encode_gamma(0)
+    with pytest.raises(ValueError):
+        encode_delta(0)
+    with pytest.raises(ValueError):
+        encode_postings([1], coding="nope")
+    with pytest.raises(ValueError):
+        decode_postings(b"", 0, coding="nope")
 
 
 def test_decode_rejects_truncated_data():
@@ -69,3 +110,10 @@ def test_decode_rejects_truncated_data():
 def test_decode_rejects_negative_count():
     with pytest.raises(ValueError):
         decode_postings(b"", -1)
+
+
+def test_decode_delta_rejects_truncated_data():
+    with pytest.raises(ValueError):
+        decode_postings(b"", 1, coding="delta")
+    with pytest.raises(ValueError):
+        decode_postings(b"\x28", 1, coding="delta")

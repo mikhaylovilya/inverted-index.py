@@ -5,6 +5,7 @@ from time import perf_counter
 
 from inverted_index import __version__
 from inverted_index.benchmark import benchmark, save_report
+from inverted_index.coding import SUPPORTED_CODINGS
 from inverted_index.corpus import convert_json_to_jsonl, iter_documents
 from inverted_index.index import InvertedIndex, collect_postings
 
@@ -25,6 +26,7 @@ def parse_args(argv=None):
     build = commands.add_parser("build", help="Build a compressed index")
     build.add_argument("input")
     build.add_argument("index")
+    build.add_argument("--coding", choices=SUPPORTED_CODINGS, default="gamma")
     build.set_defaults(handler=run_build)
 
     search = commands.add_parser("search", help="Search a saved index")
@@ -41,6 +43,7 @@ def parse_args(argv=None):
     bench.add_argument("--query", default="Ректор СПбГУ/МГУ")
     bench.add_argument("--target-docs", type=int, default=40000)
     bench.add_argument("--repeats", type=int, default=5)
+    bench.add_argument("--coding", choices=SUPPORTED_CODINGS, default="gamma")
     bench.add_argument("--output", default="benchmark.json")
     bench.set_defaults(handler=run_benchmark)
     return parser.parse_args(argv)
@@ -55,7 +58,7 @@ def run_convert(args):
 def run_build(args):
     started = perf_counter()
     postings, document_count = collect_postings(iter_documents(args.input))
-    index = InvertedIndex.from_postings(postings, document_count)
+    index = InvertedIndex.from_postings(postings, document_count, args.coding)
     elapsed = perf_counter() - started
     index.save(args.index)
     report = index.stats()
@@ -130,6 +133,7 @@ def run_benchmark(args):
         args.query,
         target_docs=args.target_docs,
         repeats=args.repeats,
+        coding=args.coding,
     )
     path = save_report(report, args.output)
     print(json.dumps(report, ensure_ascii=False, indent=2))

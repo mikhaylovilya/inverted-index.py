@@ -77,9 +77,19 @@ def test_benchmark_report(corpus):
     assert report["result_documents"] >= 1
     assert report["index"]["postings"] > 0
     assert report["index"]["compressed_bytes"] < report["index"]["classic_bytes"]
+    assert report["coding"] == "gamma"
+    assert report["index"]["coding"] == "gamma"
     assert report["timings"]["search_repeats"] == 2
     assert report["timings"]["total_index_seconds"] >= 0
     assert report["timings"]["compressed_search_seconds"] >= 0
+
+
+def test_benchmark_delta_coding(corpus):
+    report = benchmark(corpus, "ректор", coding="delta", repeats=1)
+
+    assert report["coding"] == "delta"
+    assert report["index"]["coding"] == "delta"
+    assert report["results_match_classic"] is True
 
 
 def test_benchmark_scales_documents(corpus):

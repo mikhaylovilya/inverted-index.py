@@ -37,7 +37,7 @@ def search_classic(postings, query, match_all=False):
     return search_lists([postings.get(term, []) for term in terms], match_all)
 
 
-def benchmark(path, query, target_docs=0, repeats=5):
+def benchmark(path, query, target_docs=0, repeats=5, coding="gamma"):
     if repeats < 1:
         raise ValueError("Repeats must be at least 1")
     source_documents = count_documents(path)
@@ -50,7 +50,7 @@ def benchmark(path, query, target_docs=0, repeats=5):
     collect_seconds = perf_counter() - started
 
     started = perf_counter()
-    index = InvertedIndex.from_postings(postings, document_count)
+    index = InvertedIndex.from_postings(postings, document_count, coding)
     compression_seconds = perf_counter() - started
 
     terms = tokenize(query)
@@ -78,6 +78,7 @@ def benchmark(path, query, target_docs=0, repeats=5):
         "source_documents": source_documents,
         "indexed_documents": document_count,
         "synthetic_documents": max(0, document_count - source_documents),
+        "coding": coding,
         "query": query,
         "query_terms": terms,
         "result_documents": len(compressed_results),

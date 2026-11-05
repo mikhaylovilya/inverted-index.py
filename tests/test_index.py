@@ -105,6 +105,39 @@ def test_index_save_and_load_roundtrip(tmp_path):
     assert loaded.stats() == index.stats()
 
 
+def test_delta_coding_matches_gamma_search_and_roundtrips(tmp_path):
+    postings = {"ректор": [1, 3, 8], "спбгу": [2, 8], "мгу": [8]}
+    gamma = InvertedIndex.from_postings(postings, document_count=8, coding="gamma")
+    delta = InvertedIndex.from_postings(postings, document_count=8, coding="delta")
+
+    assert delta.coding == "delta"
+    assert delta.postings_for("ректор") == [1, 3, 8]
+    assert delta.search("Ректор СПбГУ/МГУ") == gamma.search("Ректор СПбГУ/МГУ")
+    assert delta.stats()["coding"] == "delta"
+    assert delta.stats()["compressed_bytes"] != gamma.stats()["compressed_bytes"]
+
+    path = tmp_path / "delta.pkl"
+    delta.save(path)
+    loaded = InvertedIndex.load(path)
+    assert loaded.coding == "delta"
+    assert loaded.postings_for("спбгу") == [2, 8]
+    assert loaded.stats() == delta.stats()
+
+
+def test_load_defaults_missing_coding_to_gamma(tmp_path):
+    index = InvertedIndex.from_postings({"a": [1, 2]}, document_count=2)
+    path = tmp_path / "index.pkl"
+    index.save(path)
+    payload = pickle.loads(path.read_bytes())
+    del payload["coding"]
+    path.write_bytes(pickle.dumps(payload))
+
+    loaded = InvertedIndex.load(path)
+
+    assert loaded.coding == "gamma"
+    assert loaded.postings_for("a") == [1, 2]
+
+
 def test_load_rejects_unknown_format(tmp_path):
     path = tmp_path / "index.pkl"
     path.write_bytes(pickle.dumps({"version": 999}))

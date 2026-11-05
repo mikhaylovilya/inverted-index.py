@@ -37,27 +37,28 @@ def search_lists(posting_lists, match_all=False):
 
 
 class InvertedIndex:
-    def __init__(self, postings, document_count, total_postings):
+    def __init__(self, postings, document_count, total_postings, coding="gamma"):
         self.postings = postings
         self.document_count = document_count
         self.total_postings = total_postings
+        self.coding = coding
 
     @classmethod
-    def from_postings(cls, postings, document_count):
+    def from_postings(cls, postings, document_count, coding="gamma"):
         compressed = {}
         total_postings = 0
         for term, doc_ids in postings.items():
-            data, count = encode_postings(doc_ids)
+            data, count = encode_postings(doc_ids, coding)
             compressed[term] = (data, count)
             total_postings += count
-        return cls(compressed, document_count, total_postings)
+        return cls(compressed, document_count, total_postings, coding)
 
     def postings_for(self, term):
         entry = self.postings.get(term)
         if entry is None:
             return []
         data, count = entry
-        return decode_postings(data, count)
+        return decode_postings(data, count, self.coding)
 
     def search(self, query, match_all=False):
         return self.search_terms(tokenize(query), match_all)
@@ -81,6 +82,7 @@ class InvertedIndex:
             "classic_bytes": classic_bytes,
             "compression_ratio": ratio,
             "saved_percent": (1.0 - ratio) * 100.0 if classic_bytes else 0.0,
+            "coding": self.coding,
         }
 
     def save(self, path):
@@ -90,6 +92,7 @@ class InvertedIndex:
             "version": INDEX_VERSION,
             "document_count": self.document_count,
             "total_postings": self.total_postings,
+            "coding": self.coding,
             "postings": self.postings,
         }
         with target.open("wb") as file:
@@ -105,4 +108,5 @@ class InvertedIndex:
             payload["postings"],
             payload["document_count"],
             payload["total_postings"],
+            payload.get("coding", "gamma"),
         )

@@ -48,6 +48,10 @@ def test_parse_defaults():
     assert args.query == "Ректор СПбГУ/МГУ"
     assert args.target_docs == 40000
     assert args.repeats == 5
+    assert args.coding == "gamma"
+
+    delta = parse_args(["build", "pages.jsonl", "index.pkl", "--coding", "delta"])
+    assert delta.coding == "delta"
 
     search = parse_args(["search", "query", "--index", "index.pkl"])
     assert search.limit == 10
